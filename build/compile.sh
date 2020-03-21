@@ -23,12 +23,11 @@ function compile() {
 
   if ! [[ $output == -* ]]; then
     # $output is build output directory (build_dir)
-    output="-c"     
     local out=${output}/$(replace_extension $src ".o")
     mkdir -p $(dirname $out)
+    output="-c"
   else
-    # $output is a flag eg. -E.
-    local out="/dev/stdout"  # No output file.
+    :  # $output is a flag eg. -E. No output file.
   fi
 
   $ARDUINO_BIN_DIR/avr-g++  \
@@ -42,7 +41,7 @@ function compile() {
     $(prepend_each "-I" ${INCLUDE_DIRS[@]})  \
     ${extra_flags[@]:-}  \
     $src  \
-    -o $out
+    -o ${out:-"/dev/stdout"}
 
   # TODO: Are these flags needed?
   # -isystem ${ARDUINO_DIR}/hardware/tools/avr/avr/include
@@ -50,7 +49,7 @@ function compile() {
   # -DARDUINO_ARCH_AVR
   # -D__PROG_TYPES_COMPAT__
 
-  [[ -v o ]] && echo $o || true
+  [[ -v out ]] && echo $out || true
 }
 
 INCLUDE_DIRS=(
