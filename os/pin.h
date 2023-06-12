@@ -2,10 +2,9 @@
 #pragma once
 
 #include "lib/check.h"
+#include "lib/log.h"
 #include "os/arduino.h"
-#include "os/scheduler-global.h"
 #include "lib/promise.h"
-#include "os/scheduler-promise.h"
 #include "os/timer-global.h"
 
 
@@ -47,26 +46,28 @@ public:
     return !static_cast<bool>(GetState());
   }
 
-  // Repeatedly polls the pin, via a periodic scheduler task, until the pin goes
-  // from low to high. The returned promise is resolved when the pin goes high.
+  // TODO until the pin goes from low to high.
+  // The returned promise is resolved when the pin goes high.
   template <uint32_t poll_frequency_usec>
-  Promise<void> OnceGoesHigh() const {
+  Promise<uint32_t> OnceGoesHigh() const {
     CHECK(IsLow());
-    return scheduler.RunEveryMicrosUntilResolved<void>(
-      poll_frequency_usec, [this]() {
-        return IsHigh();
-      });
+    return OnceChanges([this](uint32_t micros) {
+      CHECK(IsHigh());
+      DLOG(INFO) << P("pin=") << pin_ << P(" HIGH");
+      return micros;
+    });
   }
 
-  // Repeatedly polls the pin, via a periodic scheduler task, until the pin goes
-  // from high to low. The returned promise is resolved when the pin goes low.
+  // TODO until the pin goes from low to low.
+  // The returned promise is resolved when the pin goes low.
   template <uint32_t poll_frequency_usec>
-  Promise<void> OnceGoesLow() const {
+  Promise<uint32_t> OnceGoesLow() const {
     CHECK(IsHigh());
-    return scheduler.RunEveryMicrosUntilResolved<void>(
-      poll_frequency_usec, [this]() {
-        return IsLow();
-      });
+    return OnceChanges([this](uint32_t micros) {
+      CHECK(IsLow());
+      DLOG(INFO) << P("pin=") << pin_ << P(" LOW");
+      return micros;
+    });
   }
 
   // Repeatedly polls the pin, via periodic scheduler tasks, until it spikes:
@@ -75,15 +76,19 @@ public:
   // occur.
   template <uint32_t poll_frequency_usec>
   Promise<uint32_t> OnceSpikes() const {
-    return OnceGoesHigh<poll_frequency_usec>().template Then<uint32_t>([this]() {
-      const uint32_t time_high_usec = timer.Now();
+    return OnceGoesHigh<poll_frequency_usec>().template Then<uint32_t>(
+      [this](uint32_t time_high_usec) {
       return OnceGoesLow<poll_frequency_usec>().template Then<uint32_t>(
-        [time_high_usec]() {
-          const uint32_t time_low_usec = timer.Now();
+        [time_high_usec](uint32_t time_low_usec) {
           const uint32_t spike_duration_usec = time_low_usec - time_high_usec;
           return spike_duration_usec;
         });
     });
+  }
+
+  template <typename F>
+  Promise<uint32_t> OnceChanges(F&& f) {
+    // return pin_monitor.OnceChanges(pin_, std::move(f));
   }
 };
 

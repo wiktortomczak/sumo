@@ -2,6 +2,9 @@
 #include <cstdint>
 
 
+#define TEST_CRITICAL_SECTION(code) code  // TODO
+
+
 class FakeTimer {
 public:
   uint32_t Now() {
@@ -18,19 +21,21 @@ private:
 
 #include "os/scheduler.h"
 
-using SchedulerUnderTest = Scheduler<false>;
+using TaskId = Scheduler<const char>::TaskId;
 
 class SchedulerProxy {
 public:
-  SchedulerUnderTest::TaskId
-  RunAfterMicros(uint32_t micros, std::function<void()>&& f) {
-    return scheduler_->RunAfterMicros(micros, std::move(f));
+  TaskId RunAfterMicros(uint32_t micros, std::function<void()>&& f,
+                        const char* description = nullptr) volatile {
+    return scheduler_->RunAfterMicros(micros, std::move(f), description);
   }
 
-  void Set(SchedulerUnderTest* scheduler) { scheduler_ = scheduler; }
+  void Set(volatile Scheduler<const char>* scheduler) {
+    scheduler_ = scheduler;
+  }
 
 private:
-  SchedulerUnderTest* scheduler_ = nullptr;
+  volatile Scheduler<const char>* scheduler_ = nullptr;
 } scheduler_;
 
 #define TEST_SCHEDULER scheduler_  // Inject scheduler_ into code under test.
@@ -59,7 +64,7 @@ void AssertInRange(uint32_t t, uint32_t a, uint32_t b) {
 
 int main() {
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 
@@ -78,7 +83,7 @@ int main() {
   // TODO: Test scheduling a new task from inside a task, while scheduler is running.
 
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 
@@ -95,7 +100,7 @@ int main() {
   }
 
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 
@@ -121,12 +126,12 @@ int main() {
   }
 
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 
     Call calls[5];
-    SchedulerUnderTest::TaskId scheduled[5] = {
+    TaskId scheduled[5] = {
       scheduler.RunAfterMicros(100, [&calls]() { calls[1].Make(); }),
       scheduler.RunAfterMicros(100, [&calls]() { calls[0].Make(); }),
       scheduler.RunAfterMicros(300, [&calls]() { calls[2].Make(); }),
@@ -146,7 +151,7 @@ int main() {
   }
 
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 
@@ -163,7 +168,7 @@ int main() {
   }
   
   {
-    SchedulerUnderTest scheduler;
+    volatile Scheduler scheduler;
     scheduler_.Set(&scheduler);
     timer_.Reset();
 

@@ -7,26 +7,27 @@ enum class PinMode : uint8_t;
 
 #ifndef TEST_ARDUINO
 
-#include "Arduino.h"
+#include "arduino-core/wiring.h"
 
 // Arduino hardware abstraction layer (HAL). Interface to on-board hardware.
 //
-// Implemented as a thin wrapper around Arduino.h bundled with Arduino IDE.
+// Implemented as a thin wrapper around <Arduino core library>/Arduino.h
+// bundled with Arduino IDE.
 // 
 // TODO: Remove this dependency and manipulate the board directly?
-// Apparently functions in Arduino.h do a lot more than needed.
+// Apparently functions in Arduino core library do a lot more than needed.
 class Arduino {
 public:
   static void SetDigitalPinMode(uint8_t pin, PinMode mode) {
-    ::setPinMode(pin, mode);
+    ::pinMode(pin, static_cast<uint8_t>(mode));
   }
 
   static PinState GetDigitalPinState(uint8_t pin) {
-    return ::digitalRead(pin);
+    return static_cast<PinState>(::digitalRead(pin));
   }
 
   static void SetDigitalPinState(uint8_t pin, PinState state) {
-    ::digitalWrite(pin, state);
+    ::digitalWrite(pin, static_cast<uint8_t>(state));
   }
 
   // TODO: Pass / return C++ duration<T>.
@@ -54,5 +55,6 @@ enum class PinState : uint8_t {
 
 enum class PinMode : uint8_t {
   INPUT = 0,
-  OUTPUT = 1
+  OUTPUT = 1,
+  INPUT_PULLUP = 2
 };

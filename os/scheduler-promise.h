@@ -3,9 +3,10 @@
 #include "lib/promise.h"
 #include "os/scheduler.h"
 
-template <bool has_stop>
-Promise<void> Scheduler<has_stop>::AfterMicros(uint32_t micros) {
+template <typename DescriptionT>
+Promise<void> Scheduler<DescriptionT>::AfterMicros(uint32_t micros) volatile {
   PromiseWithResolve<void> promise;
-  RunAfterMicros(micros, [promise]() mutable { promise.Resolve(); });
+  RunAfterMicros(micros, [promise]() mutable { promise.Resolve(); },
+                 P("Resolve() AfterMicros()"));
   return promise;
 }

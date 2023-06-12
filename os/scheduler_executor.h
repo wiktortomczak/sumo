@@ -11,9 +11,9 @@
 class SchedulerExecutor : public Executor {
 public:
   template <typename F, typename... Args>
-  void RunAsync(F&& callable, Args&&... args) {
+  void RunAsync(F&& callable, Args&&... args) volatile {
     auto callable_args = Closures::Bind(
       std::forward<F>(callable), std::forward<Args>(args)...);
-    scheduler.RunAfterMicros(0, std::move(callable_args));
+    scheduler.RunAfterMicros(0, std::move(callable_args), P("RunAsync()"));
   }
 };

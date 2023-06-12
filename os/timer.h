@@ -8,7 +8,7 @@
 class Timer {
 public:
   // TODO: Pass / return C++ duration<T>.
-  uint32_t Now() {
+  uint32_t Now() volatile {
     return Arduino::GetMicrosecondsSinceStart();
   }
 };

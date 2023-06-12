@@ -2,9 +2,11 @@
 #pragma once
 
 #ifndef TEST_SCHEDULER
+#include "arduino-ext/critical_section.h"
+#include "arduino-ext/pgm.h"
 #include "os/scheduler.h"
-inline Scheduler scheduler;  // Global Scheduler instance.
+// Global Scheduler instance.
+inline volatile Scheduler<const PGM<char>> scheduler;
 #else
-auto& scheduler = TEST_SCHEDULER;  // Injected global Scheduler.
+volatile auto& scheduler = TEST_SCHEDULER;  // Injected global Scheduler.
 #endif
-
